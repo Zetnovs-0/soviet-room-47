@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1b2620" />
+  <meta name="description" content="Комната 47 — интерактивная 3D-сцена тихой советской квартиры 1979 года. Зелёные стены, чехословацкая люстра, паркет, окно с меняющейся погодой." />
+  <title>Комната 47 — советский интерьер</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet" />
+  <link rel="canonical" href="https://zetnovs-0.github.io/soviet-room-47/" />
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./style.css" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Комната 47 — советский интерьер" />
+  <meta property="og:description" content="Интерактивная 3D-сцена тихой советской квартиры 1979 года: время суток, погода, люстра и телевизор. Всё построено кодом." />
+  <meta property="og:url" content="https://zetnovs-0.github.io/soviet-room-47/" />
+  <meta property="og:image" content="https://zetnovs-0.github.io/soviet-room-47/preview.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Комната 47 — советский интерьер" />
+  <meta name="twitter:image" content="https://zetnovs-0.github.io/soviet-room-47/preview.jpg" />
+</head>
+<body>
+  <main id="app">
+    <canvas id="scene" aria-label="Трёхмерная советская комната"></canvas>
+
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="film-grain" aria-hidden="true"></div>
+
+    <header class="masthead">
+      <div class="kicker"><span class="kicker-rule"></span>Ленинград · 1979</div>
+      <h1>Комната <span>47</span></h1>
+      <p class="lede" id="lede">Закат. Медный свет ложится на ковёр, а стены становятся тёплыми и тяжёлыми.</p>
+      <div class="readout">
+        <span class="readout-dot" aria-hidden="true"></span>
+        <span id="status-line">19:40 · ясно</span>
+        <span class="readout-sep">за окном</span>
+      </div>
+    </header>
+
+    <p class="hint">
+      <span>потяните</span> — осмотреться
+      <i></i>
+      <span>колесо</span> — ближе
+    </p>
+
+    <aside class="console" aria-label="Управление сценой">
+      <section class="console-group">
+        <h2><span>01</span> Время суток</h2>
+        <div class="button-row" id="time-controls">
+          <button class="seg-btn" data-time="morning" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M7 18a5 5 0 0 1 10 0M12 3v3M4.9 6.9l2.1 2.1M19.1 6.9 17 9M2 13h2M20 13h2"/></svg>
+            <span>Утро</span>
+          </button>
+          <button class="seg-btn" data-time="day" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>
+            <span>День</span>
+          </button>
+          <button class="seg-btn" data-time="sunset" aria-pressed="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M7 18a5 5 0 0 1 10 0M12 2v5M5 8l2 2M19 8l-2 2M2 13h3M19 13h3M9 21h6"/></svg>
+            <span>Закат</span>
+          </button>
+          <button class="seg-btn" data-time="night" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.6A8.4 8.4 0 0 1 9.4 4a8.4 8.4 0 1 0 10.6 10.6Z"/><path d="M17 3v2M16 4h2"/></svg>
+            <span>Ночь</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="console-group">
+        <h2><span>02</span> Погода</h2>
+        <div class="button-row" id="weather-controls">
+          <button class="seg-btn" data-weather="clear" aria-pressed="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.6"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/></svg>
+            <span>Ясно</span>
+          </button>
+          <button class="seg-btn" data-weather="cloudy" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 18h11a3.5 3.5 0 0 0 .4-7 5.4 5.4 0 0 0-10.3-1.2A4.2 4.2 0 0 0 6.5 18Z"/></svg>
+            <span>Облачно</span>
+          </button>
+          <button class="seg-btn" data-weather="rain" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 15h11a3.5 3.5 0 0 0 .4-7 5.4 5.4 0 0 0-10.3-1.2A4.2 4.2 0 0 0 6.5 15ZM8 18l-1 3M12 18l-1 3M16 18l-1 3"/></svg>
+            <span>Дождь</span>
+          </button>
+          <button class="seg-btn" data-weather="snow" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 14h11a3.5 3.5 0 0 0 .4-7 5.4 5.4 0 0 0-10.3-1.2A4.2 4.2 0 0 0 6.5 14ZM8 18v3M12 18v3M16 18v3M6.8 19.5l2.4 2M17.2 19.5l-2.4 2"/></svg>
+            <span>Снег</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="console-group console-group--small">
+        <h2><span>03</span> В комнате</h2>
+        <div class="button-row button-row--toggles">
+          <button class="tog-btn" id="lamp-toggle" aria-pressed="true">
+            <span class="tog-switch" aria-hidden="true"></span>
+            <span>Люстра</span>
+          </button>
+          <button class="tog-btn" id="tv-toggle" aria-pressed="false">
+            <span class="tog-switch" aria-hidden="true"></span>
+            <span>Телевизор</span>
+          </button>
+          <button class="about-btn" id="about-toggle" aria-label="О сцене">i</button>
+        </div>
+      </section>
+    </aside>
+
+    <dialog id="about" aria-labelledby="about-title">
+      <button class="dialog-close" id="about-close" aria-label="Закрыть">×</button>
+      <p class="dialog-kicker">Комната 47 · открытый проект</p>
+      <h2 id="about-title">Маленькая ода тихой комнате</h2>
+      <p>Зелёная масляная краска, паркет «квадратами», ковёр на стене, стенка из ДСП и стеклянная чехословацкая люстра — собирательный образ ленинградской квартиры конца семидесятых.</p>
+      <p>Всё в сцене построено кодом: ни одной внешней текстуры. Небо, облака, звёзды, дождь, снег, капли на стекле, пыль и экран телевизора написаны небольшими шейдерами. Свет за окном меняется вместе с погодой и временем суток, а комната отвечает на это тенями и отражениями.</p>
+      <div class="dialog-grid">
+        <div>
+          <h3>Снаружи</h3>
+          <p>Ясно · облачно · дождь · снег. Меняется небо, свет, окна соседних домов, капли и иней на стекле.</p>
+        </div>
+        <div>
+          <h3>Внутри</h3>
+          <p>Утро · день · закат · ночь. Солнце и луна двигаются вокруг дома; шторы, мебель и люстра дают тени.</p>
+        </div>
+      </div>
+      <p class="dialog-keys"><b>1—4</b> время · <b>Q W E R</b> погода · <b>L</b> люстра · <b>T</b> телевизор</p>
+      <p class="dialog-credit">Three.js · WebGL · простые шейдеры <span>·</span> <a href="https://github.com/Zetnovs-0/soviet-room-47" target="_blank" rel="noopener">исходный код</a></p>
+    </dialog>
+
+    <div id="loader" class="loader">
+      <div class="loader-inner">
+        <div class="loader-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <p class="loader-title">Комната 47</p>
+        <p class="loader-sub">зажигаем люстру, ставим чайник…</p>
+        <div class="loader-line"><i></i></div>
+      </div>
+    </div>
+
+    <noscript>
+      <div class="noscript">Для этой сцены нужен JavaScript и WebGL.<br />Без них здесь только тишина.</div>
+    </noscript>
+  </main>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
