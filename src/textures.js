@@ -52,12 +52,20 @@ function softBlotches(x, w, h, count, colors, rnd, rMin, rMax) {
     const cx = rnd() * w;
     const cy = rnd() * h;
     const r = rMin + rnd() * (rMax - rMin);
-    const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
     const col = colors[Math.floor(rnd() * colors.length)];
-    g.addColorStop(0, col);
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    x.fillStyle = g;
-    x.fillRect(cx - r, cy - r, r * 2, r * 2);
+    // дублируем пятно за краями, чтобы текстура сходилась без шва
+    for (const ox of [-w, 0, w]) {
+      for (const oy of [-h, 0, h]) {
+        const px = cx + ox;
+        const py = cy + oy;
+        if (px + r < 0 || px - r > w || py + r < 0 || py - r > h) continue;
+        const g = x.createRadialGradient(px, py, 0, px, py, r);
+        g.addColorStop(0, col);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        x.fillStyle = g;
+        x.fillRect(px - r, py - r, r * 2, r * 2);
+      }
+    }
   }
 }
 
@@ -581,7 +589,7 @@ export function buildingTextures() {
   const { c: ce, x: xe } = emC;
   const rnd = mulberry32(1984);
 
-  x.fillStyle = '#656864';
+  x.fillStyle = '#8e9088';
   x.fillRect(0, 0, W, H);
   xe.fillStyle = '#000';
   xe.fillRect(0, 0, W, H);
@@ -1025,5 +1033,394 @@ export function shadowTexture() {
   g.addColorStop(1, 'rgba(0,0,0,0)');
   x.fillStyle = g;
   x.fillRect(0, 0, S, S);
+  return tex(c);
+}
+
+/* ================================================================== */
+/*  Обои, линолеум и фасады для осенней комнаты                       */
+/* ================================================================== */
+
+export function wallpaperLightTexture() {
+  const S = 512;
+  const { c, x } = canvas2d(S, S);
+  const rnd = mulberry32(2741);
+  x.fillStyle = '#e7dfcf';
+  x.fillRect(0, 0, S, S);
+
+  // тонкая сетка обоев и мелкий растительный крап
+  for (let gx = 32; gx < S; gx += 64) {
+    for (let gy = 32; gy < S; gy += 64) {
+      const ox = (Math.floor(gy / 64) % 2) * 32;
+      const cx = gx + ox;
+      x.strokeStyle = 'rgba(158,145,121,.16)';
+      x.lineWidth = 1.1;
+      for (let p = 0; p < 4; p++) {
+        const a = (p / 4) * TAU + 0.35;
+        x.beginPath();
+        x.ellipse(cx + Math.cos(a) * 6, gy + Math.sin(a) * 5, 4.2, 2.1, a, 0, TAU);
+        x.stroke();
+      }
+      x.fillStyle = 'rgba(184,169,141,.28)';
+      x.beginPath();
+      x.arc(cx, gy, 1.6, 0, TAU);
+      x.fill();
+    }
+  }
+  for (let sx = 32; sx < S; sx += 64) {
+    x.strokeStyle = 'rgba(168,154,129,.08)';
+    x.lineWidth = 1;
+    x.beginPath();
+    x.moveTo(sx, 0);
+    x.lineTo(sx, S);
+    x.stroke();
+  }
+  grain(x, S, S, 4);
+  return tex(c, { repeatX: 3, repeatY: 1.8 });
+}
+
+export function wallpaperEmeraldTexture() {
+  const S = 512;
+  const { c, x } = canvas2d(S, S);
+  const rnd = mulberry32(7247);
+  x.fillStyle = '#b4cdb9';
+  x.fillRect(0, 0, S, S);
+
+  // еле заметные вертикальные переливы
+  for (let i = 0; i < 160; i++) {
+    const gx = rnd() * S;
+    x.strokeStyle = rnd() > 0.5 ? `rgba(235,246,235,${0.018 + rnd() * 0.04})` : `rgba(72,110,83,${0.014 + rnd() * 0.032})`;
+    x.lineWidth = 0.8 + rnd() * 2.4;
+    x.beginPath();
+    for (let y = -10; y <= S + 10; y += 18) {
+      const xx = gx + Math.sin(y * 0.018 + i) * 2.2;
+      y === -10 ? x.moveTo(xx, y) : x.lineTo(xx, y);
+    }
+    x.stroke();
+  }
+
+  // тонкие листья, повторяющиеся по холсту
+  for (let gy = 24; gy < S; gy += 128) {
+    for (let gx = 24; gx < S; gx += 128) {
+      const cx = gx + (Math.floor(gy / 128) % 2) * 64;
+      x.save();
+      x.translate(cx, gy);
+      x.rotate(0.55);
+      x.strokeStyle = 'rgba(83,127,97,.19)';
+      x.lineWidth = 1.2;
+      x.beginPath();
+      x.moveTo(0, 14);
+      x.bezierCurveTo(13, 5, 12, -10, 0, -18);
+      x.bezierCurveTo(-12, -10, -13, 5, 0, 14);
+      x.stroke();
+      x.beginPath();
+      x.moveTo(0, 12);
+      x.lineTo(0, -15);
+      x.stroke();
+      x.restore();
+    }
+  }
+  grain(x, S, S, 4);
+  return tex(c, { repeatX: 3, repeatY: 1.8 });
+}
+
+export function wallpaperBrownStripeTexture() {
+  const S = 512;
+  const { c, x } = canvas2d(S, S);
+  const rnd = mulberry32(3191);
+  x.fillStyle = '#5b3f2c';
+  x.fillRect(0, 0, S, S);
+  for (let sx = 0; sx < S; sx += 64) {
+    x.fillStyle = '#654934';
+    x.fillRect(sx, 0, 32, S);
+    x.fillStyle = '#503725';
+    x.fillRect(sx + 32, 0, 32, S);
+    x.strokeStyle = 'rgba(38,24,14,.32)';
+    x.lineWidth = 1.5;
+    x.beginPath();
+    x.moveTo(sx + 0.75, 0);
+    x.lineTo(sx + 0.75, S);
+    x.moveTo(sx + 32.75, 0);
+    x.lineTo(sx + 32.75, S);
+    x.stroke();
+    // мелкий бисерный пунктир
+    for (let y = 8; y < S; y += 18) {
+      x.fillStyle = 'rgba(178,139,98,.16)';
+      x.beginPath();
+      x.arc(sx + 16, y, 1.1, 0, TAU);
+      x.fill();
+    }
+  }
+  for (let i = 0; i < 700; i++) {
+    x.fillStyle = rnd() > 0.5 ? 'rgba(255,226,186,.035)' : 'rgba(25,13,7,.05)';
+    x.fillRect(rnd() * S, rnd() * S, 1, 1 + rnd() * 2);
+  }
+  grain(x, S, S, 4);
+  return tex(c, { repeatX: 2, repeatY: 1.6 });
+}
+
+export function wallpaperLightStripeTexture() {
+  const S = 512;
+  const { c, x } = canvas2d(S, S);
+  const rnd = mulberry32(5507);
+  x.fillStyle = '#ddd4c1';
+  x.fillRect(0, 0, S, S);
+  for (let sx = 0; sx < S; sx += 64) {
+    x.fillStyle = 'rgba(204,193,171,.42)';
+    x.fillRect(sx, 0, 22, S);
+    x.fillStyle = 'rgba(255,250,239,.28)';
+    x.fillRect(sx + 22, 0, 3, S);
+    x.strokeStyle = 'rgba(172,157,132,.28)';
+    x.lineWidth = 0.8;
+    x.beginPath();
+    x.moveTo(sx + 42.5, 0);
+    x.lineTo(sx + 42.5, S);
+    x.stroke();
+    for (let y = 18; y < S; y += 64) {
+      x.fillStyle = 'rgba(170,155,130,.2)';
+      x.beginPath();
+      x.arc(sx + 32, y, 1.5, 0, TAU);
+      x.fill();
+    }
+  }
+  grain(x, S, S, 4);
+  return tex(c, { repeatX: 3, repeatY: 1.8 });
+}
+
+export function ceilingGreenTexture() {
+  const S = 512;
+  const { c, x } = canvas2d(S, S);
+  const rnd = mulberry32(8423);
+  x.fillStyle = '#76907a';
+  x.fillRect(0, 0, S, S);
+  softBlotches(x, S, S, 30, ['rgba(143,166,145,.22)', 'rgba(83,107,88,.2)', 'rgba(170,188,166,.1)'], rnd, 35, 150);
+  for (let i = 0; i < 90; i++) {
+    x.strokeStyle = rnd() > 0.5 ? `rgba(198,212,193,${0.02 + rnd() * 0.04})` : `rgba(46,66,51,${0.02 + rnd() * 0.035})`;
+    x.lineWidth = 1 + rnd() * 4;
+    x.beginPath();
+    const sx = rnd() * S;
+    const sy = rnd() * S;
+    x.moveTo(sx, sy);
+    x.quadraticCurveTo(sx + 40 + rnd() * 60, sy + (rnd() - 0.5) * 20, sx + 120 + rnd() * 90, sy + (rnd() - 0.5) * 25);
+    x.stroke();
+  }
+  grain(x, S, S, 4);
+  return tex(c, { repeatX: 2, repeatY: 2 });
+}
+
+export function linoleumTexture() {
+  const S = 1024;
+  const { c, x } = canvas2d(S, S);
+  const rnd = mulberry32(6120);
+  const palette = ['#b99468', '#b08a5e', '#c29d72', '#b69063', '#bd986b'];
+  x.fillStyle = '#806448';
+  x.fillRect(0, 0, S, S);
+  const tw = 256;
+  const th = 128;
+  for (let row = 0; row < S / th; row++) {
+    for (let col = 0; col < S / tw; col++) {
+      const x0 = col * tw;
+      const y0 = row * th;
+      const base = palette[Math.floor(rnd() * palette.length)];
+      x.fillStyle = base;
+      x.fillRect(x0 + 3, y0 + 3, tw - 6, th - 6);
+
+      // мраморные прожилки
+      x.save();
+      x.beginPath();
+      x.rect(x0 + 3, y0 + 3, tw - 6, th - 6);
+      x.clip();
+      for (let k = 0; k < 7; k++) {
+        x.strokeStyle = rnd() > 0.45 ? `rgba(102,71,43,${0.035 + rnd() * 0.05})` : `rgba(255,233,196,${0.04 + rnd() * 0.06})`;
+        x.lineWidth = 0.8 + rnd() * 2.2;
+        x.beginPath();
+        const sy = y0 + rnd() * th;
+        x.moveTo(x0 - 10, sy);
+        x.bezierCurveTo(x0 + tw * 0.25, sy + (rnd() - 0.5) * 34, x0 + tw * 0.7, sy + (rnd() - 0.5) * 30, x0 + tw + 10, sy + (rnd() - 0.5) * 42);
+        x.stroke();
+      }
+      x.restore();
+
+      x.strokeStyle = 'rgba(98,73,49,.75)';
+      x.lineWidth = 2;
+      x.strokeRect(x0 + 2, y0 + 2, tw - 4, th - 4);
+      x.strokeStyle = 'rgba(245,222,188,.22)';
+      x.lineWidth = 1;
+      x.strokeRect(x0 + 5, y0 + 5, tw - 10, th - 10);
+    }
+  }
+  grain(x, S, S, 3);
+  return tex(c, { repeatX: 1.8, repeatY: 2 });
+}
+
+export function thermometerTexture() {
+  const W = 256;
+  const H = 160;
+  const { c, x } = canvas2d(W, H);
+  x.clearRect(0, 0, W, H);
+  // корпус
+  x.fillStyle = '#e6e1d4';
+  x.beginPath();
+  x.roundRect(2, 2, W - 4, H - 4, 20);
+  x.fill();
+  x.strokeStyle = 'rgba(92,88,74,.7)';
+  x.lineWidth = 4;
+  x.stroke();
+  // экран
+  x.fillStyle = '#a9c2a3';
+  x.beginPath();
+  x.roundRect(18, 22, 192, 82, 8);
+  x.fill();
+  x.strokeStyle = 'rgba(58,76,54,.7)';
+  x.lineWidth = 3;
+  x.stroke();
+  // цифры
+  x.fillStyle = '#283a28';
+  x.textAlign = 'center';
+  x.textBaseline = 'middle';
+  x.font = '700 50px "Courier New", monospace';
+  x.fillText('21.6', 103, 63);
+  x.font = '700 28px "Courier New", monospace';
+  x.fillText('°C', 174, 51);
+  x.font = '500 13px "Oswald", sans-serif';
+  x.fillStyle = 'rgba(52,72,49,.85)';
+  x.fillText('КОМНАТА', 103, 90);
+  // нижняя панель
+  x.fillStyle = '#c9c3b5';
+  x.fillRect(20, 116, 148, 18);
+  x.fillStyle = 'rgba(78,75,64,.7)';
+  x.font = '500 11px "Oswald", sans-serif';
+  x.textAlign = 'left';
+  x.fillText('HYGROMETER · 46%', 26, 125);
+  x.fillStyle = '#65645a';
+  for (let i = 0; i < 3; i++) {
+    x.beginPath();
+    x.roundRect(196 + i * 17, 120, 11, 11, 3);
+    x.fill();
+  }
+  return tex(c);
+}
+
+export function towerTextures() {
+  const W = 512;
+  const H = 1024;
+  const mapC = canvas2d(W, H);
+  const emC = canvas2d(W, H);
+  const { c, x } = mapC;
+  const { c: ce, x: xe } = emC;
+  const rnd = mulberry32(1827);
+  x.fillStyle = '#c7bfae';
+  x.fillRect(0, 0, W, H);
+  xe.fillStyle = '#000';
+  xe.fillRect(0, 0, W, H);
+
+  // горизонтальные панели этажей
+  const rows = 18;
+  const rowH = H / rows;
+  for (let r = 0; r < rows; r++) {
+    const y0 = r * rowH;
+    x.fillStyle = 'rgba(92,85,73,.18)';
+    x.fillRect(0, y0, W, 2);
+    x.fillStyle = 'rgba(255,250,238,.22)';
+    x.fillRect(0, y0 + 2, W, 1);
+  }
+  for (let i = 0; i < 8; i++) {
+    x.fillStyle = 'rgba(97,90,78,.14)';
+    x.fillRect(i * (W / 8), 0, 2, H);
+  }
+  softBlotches(x, W, H, 35, ['rgba(255,248,235,.12)', 'rgba(90,84,72,.12)'], rnd, 25, 100);
+
+  const cols = 8;
+  for (let r = 0; r < rows; r++) {
+    for (let col = 0; col < cols; col++) {
+      const ww = W / cols;
+      const wx = col * ww + 13;
+      const wy = r * rowH + 10;
+      const wh = rowH - 20;
+      const winW = ww - 26;
+      const lit = rnd() < 0.36;
+      const cool = rnd() < 0.14;
+      x.fillStyle = 'rgba(30,42,48,.92)';
+      x.fillRect(wx, wy, winW, wh);
+      x.strokeStyle = 'rgba(246,242,230,.52)';
+      x.lineWidth = 3;
+      x.strokeRect(wx, wy, winW, wh);
+      x.fillStyle = 'rgba(255,255,255,.08)';
+      x.fillRect(wx + 3, wy + 3, winW - 6, 3);
+      if (lit) {
+        xe.fillStyle = cool ? 'rgba(145,185,255,.75)' : 'rgba(255,184,105,.92)';
+        xe.fillRect(wx + 3, wy + 3, winW - 6, wh - 6);
+        xe.fillStyle = 'rgba(0,0,0,.5)';
+        xe.fillRect(wx + winW * 0.46, wy, 3, wh);
+      }
+    }
+    if (r % 3 === 1) {
+      x.fillStyle = 'rgba(85,79,68,.5)';
+      x.fillRect(0, (r + 1) * rowH - 6, W, 5);
+      x.fillStyle = 'rgba(231,224,209,.5)';
+      x.fillRect(0, (r + 1) * rowH - 8, W, 2);
+    }
+  }
+  // верхний технический этаж
+  x.fillStyle = '#9d9688';
+  x.fillRect(0, 0, W, 12);
+  return { map: tex(c), emissive: tex(ce) };
+}
+
+
+/* ----------------------------- зеркало ---------------------------- */
+
+export function mirrorTexture() {
+  const W = 512;
+  const H = 512;
+  const { c, x } = canvas2d(W, H);
+  const rnd = mulberry32(9081);
+  const base = x.createLinearGradient(0, 0, W * 0.35, H);
+  base.addColorStop(0, '#dce4df');
+  base.addColorStop(0.38, '#aebbb6');
+  base.addColorStop(0.7, '#7d8b86');
+  base.addColorStop(1, '#64716d');
+  x.fillStyle = base;
+  x.fillRect(0, 0, W, H);
+
+  // мягкое отражение окна
+  x.save();
+  x.globalAlpha = 0.45;
+  const win = x.createLinearGradient(W * 0.55, 0, W * 0.95, H);
+  win.addColorStop(0, 'rgba(240,246,242,.85)');
+  win.addColorStop(0.45, 'rgba(197,216,213,.5)');
+  win.addColorStop(1, 'rgba(120,143,139,.1)');
+  x.fillStyle = win;
+  x.fillRect(W * 0.57, 0, W * 0.27, H * 0.72);
+  x.fillStyle = 'rgba(248,250,244,.32)';
+  x.fillRect(W * 0.57, 0, W * 0.27, 8);
+  x.fillStyle = 'rgba(58,69,65,.34)';
+  x.fillRect(W * 0.697, 0, 7, H * 0.72);
+  x.restore();
+
+  // тёплый отсвет комнаты
+  const warm = x.createRadialGradient(W * 0.2, H * 0.28, 8, W * 0.2, H * 0.28, W * 0.55);
+  warm.addColorStop(0, 'rgba(242,203,152,.26)');
+  warm.addColorStop(1, 'rgba(242,203,152,0)');
+  x.fillStyle = warm;
+  x.fillRect(0, 0, W, H);
+
+  // лёгкие потёртости и пылинки
+  for (let i = 0; i < 160; i++) {
+    x.fillStyle = rnd() > 0.5 ? 'rgba(255,255,255,.04)' : 'rgba(31,40,37,.05)';
+    x.fillRect(rnd() * W, rnd() * H, 1 + rnd() * 3, 1 + rnd() * 2);
+  }
+  x.strokeStyle = 'rgba(245,250,245,.16)';
+  x.lineWidth = 9;
+  x.beginPath();
+  x.moveTo(-40, 410);
+  x.lineTo(390, -40);
+  x.stroke();
+  x.strokeStyle = 'rgba(255,255,255,.08)';
+  x.lineWidth = 30;
+  x.beginPath();
+  x.moveTo(-80, 470);
+  x.lineTo(430, -80);
+  x.stroke();
+  grain(x, W, H, 2);
   return tex(c);
 }

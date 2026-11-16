@@ -37,7 +37,6 @@ function boot() {
   const timeButtons = [...document.querySelectorAll('[data-time]')];
   const weatherButtons = [...document.querySelectorAll('[data-weather]')];
   const lampToggle = $('#lamp-toggle');
-  const tvToggle = $('#tv-toggle');
   const aboutDialog = $('#about');
   const aboutToggle = $('#about-toggle');
   const aboutClose = $('#about-close');
@@ -69,27 +68,24 @@ function boot() {
   /* ----------------------------- текстуры ----------------------------- */
 
   const T = {
-    wall: TX.wallTexture(),
-    ceiling: TX.ceilingTexture(),
-    parquet: TX.parquetTexture(),
-    rug: TX.rugTexture(),
+    wallLight: TX.wallpaperLightTexture(),
+    wallEmerald: TX.wallpaperEmeraldTexture(),
+    wallBrown: TX.wallpaperBrownStripeTexture(),
+    wallStripe: TX.wallpaperLightStripeTexture(),
+    ceilingGreen: TX.ceilingGreenTexture(),
+    linoleum: TX.linoleumTexture(),
+    woodOak: TX.woodTexture('#8a5a2f', '#4a2b13', '#c08a4f', 31),
     woodDark: TX.woodTexture('#4b2d1a', '#241207', '#7d5232', 11),
     woodMid: TX.woodTexture('#6e4527', '#3a200f', '#a06d41', 17),
     woodBeech: TX.woodTexture('#9b6c41', '#603d22', '#c99a68', 23),
-    fabricMustard: TX.fabricTexture('#a4803e', 'rgba(70,48,18,.25)', 2),
-    fabricCream: TX.fabricTexture('#c9b693', 'rgba(104,86,64,.2)', 5),
-    fabricRust: TX.fabricTexture('#8f4b37', 'rgba(62,25,18,.28)', 9),
-    fabricShade: TX.fabricTexture('#d9bc8c', 'rgba(112,81,49,.18)', 13),
-    pillow: TX.pillowTexture(),
-    tablecloth: TX.tableclothTexture(),
+    fabricCream: TX.fabricTexture('#d8cebb', 'rgba(104,86,64,.18)', 5),
+    fabricBlanket: TX.fabricTexture('#a7b6ae', 'rgba(49,71,62,.18)', 37),
+    fabricGreen: TX.fabricTexture('#5f7d63', 'rgba(25,48,31,.22)', 31),
+    thermometer: TX.thermometerTexture(),
+    mirror: TX.mirrorTexture(),
     building: TX.buildingTextures(),
-    clockFace: TX.clockTexture(),
-    landscape: TX.landscapeTexture(),
-    stillLife: TX.stillLifeTexture(),
-    plate: TX.plateTexture(),
-    news: TX.newspaperTexture(),
+    tower: TX.towerTextures(),
     glow: TX.glowTexture(),
-    shadow: TX.shadowTexture(),
   };
 
   const anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
@@ -110,22 +106,22 @@ function boot() {
   scene.fog = new THREE.FogExp2(0x9a8069, 0.008);
 
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.05, 180);
-  camera.position.set(0.78, 1.7, 2.32);
+  camera.position.set(-1.1, 1.62, -1.55);
 
   const controls = new OrbitControls(camera, canvas);
-  controls.target.set(0.02, 1.4, -0.6);
+  controls.target.set(1.0, 1.4, 0.0);
   controls.enableDamping = !reduceMotion;
   controls.dampingFactor = 0.075;
   controls.enablePan = false;
   controls.rotateSpeed = 0.55;
   controls.zoomSpeed = 0.7;
-  controls.minDistance = 1.15;
-  controls.maxDistance = 3.02;
-  controls.minPolarAngle = 1.02;
-  controls.maxPolarAngle = 1.57;
+  controls.minDistance = 1.0;
+  controls.maxDistance = 2.9;
+  controls.minPolarAngle = 0.98;
+  controls.maxPolarAngle = 2.0;
   controls.update();
 
-  // процедурное окружение для металла и лакированного паркета
+  // процедурное окружение для металла и лакированного линолеума
   try {
     const pmrem = new THREE.PMREMGenerator(renderer);
     const environmentScene = new RoomEnvironment();
@@ -156,7 +152,7 @@ function boot() {
   sun.shadow.camera.far = 64;
   sun.shadow.bias = -0.0004;
   sun.shadow.normalBias = 0.035;
-  sun.target.position.set(-0.5, 1.1, -0.9);
+  sun.target.position.set(0, 1.05, 0.15);
   scene.add(sun);
   scene.add(sun.target);
 
@@ -168,14 +164,13 @@ function boot() {
   /* ------------------------- время и погода --------------------------- */
 
   const params = new URLSearchParams(window.location.search);
-  const initialTime = TIME_ORDER.includes(params.get('t')) ? params.get('t') : 'sunset';
+  const initialTime = TIME_ORDER.includes(params.get('t')) ? params.get('t') : 'day';
   const initialWeather = WEATHER_ORDER.includes(params.get('w')) ? params.get('w') : 'clear';
 
   const state = {
     time: initialTime,
     weather: initialWeather,
     lamp: params.has('lamp') ? params.get('lamp') !== '0' : ['sunset', 'night'].includes(initialTime),
-    tv: params.get('tv') === '1',
   };
   let lampAuto = !params.has('lamp');
 
@@ -184,8 +179,6 @@ function boot() {
 
   let lampLevel = state.lamp ? 1 : 0;
   let lampTarget = lampLevel;
-  let tvLevel = state.tv ? 1 : 0;
-  let tvTarget = tvLevel;
   let ledeTimer = 0;
 
   const WHITE = new THREE.Color(0xffffff);
@@ -234,6 +227,8 @@ function boot() {
     outside.streetLight.intensity = current.streetGlow * 2.8;
     outside.exteriorAmbient.intensity = 0.12 + current.hemiIntensity * 0.22;
     outside.exteriorAmbient.color.copy(current.hemiSky).lerp(WHITE, 0.25);
+    outside.panelFill.intensity = 4 + current.hemiIntensity * 12;
+    outside.towerFill.intensity = 2 + current.hemiIntensity * 7;
 
     outside.snowMat.opacity = clamp(current.snowGround, 0, 1);
 
@@ -255,9 +250,6 @@ function boot() {
     glass.uFrost.value = current.frost;
     glassTint.copy(current.horizon).lerp(WHITE, 0.72);
     glass.uTint.value.copy(glassTint);
-
-    room.setClock(current.clock[0], current.clock[1]);
-    room.setSecond(time % 60);
   }
 
   /* ----------------------------- интерфейс ---------------------------- */
@@ -270,7 +262,6 @@ function boot() {
       button.setAttribute('aria-pressed', String(button.dataset.weather === state.weather));
     }
     lampToggle.setAttribute('aria-pressed', String(state.lamp));
-    tvToggle.setAttribute('aria-pressed', String(state.tv));
 
     const time = TIMES[state.time];
     const weather = WEATHERS[state.weather];
@@ -301,13 +292,9 @@ function boot() {
       url.searchParams.set('w', state.weather);
       if (lampAuto) {
         url.searchParams.delete('lamp');
-      } else if (state.lamp) {
-        url.searchParams.delete('lamp');
       } else {
-        url.searchParams.set('lamp', '0');
+        url.searchParams.set('lamp', state.lamp ? '1' : '0');
       }
-      if (state.tv) url.searchParams.set('tv', '1');
-      else url.searchParams.delete('tv');
       window.history.replaceState(null, '', url);
     } catch {
       /* локальный файл — адрес просто не обновится */
@@ -342,13 +329,6 @@ function boot() {
     syncUrl();
   }
 
-  function setTv(on) {
-    state.tv = Boolean(on);
-    tvTarget = state.tv ? 1 : 0;
-    syncUI(false);
-    syncUrl();
-  }
-
   for (const button of timeButtons) {
     button.addEventListener('click', () => setTime(button.dataset.time));
   }
@@ -356,7 +336,6 @@ function boot() {
     button.addEventListener('click', () => setWeather(button.dataset.weather));
   }
   lampToggle.addEventListener('click', () => setLamp(!state.lamp));
-  tvToggle.addEventListener('click', () => setTv(!state.tv));
 
   aboutToggle.addEventListener('click', () => {
     if (typeof aboutDialog.showModal === 'function') aboutDialog.showModal();
@@ -392,21 +371,18 @@ function boot() {
     } else if (key === 'l') {
       event.preventDefault();
       setLamp(!state.lamp);
-    } else if (key === 't') {
-      event.preventDefault();
-      setTv(!state.tv);
     }
   });
 
   /* ------------------------------ размеры ----------------------------- */
 
   const CAMERA_BOUNDS = {
-    minX: -2.55,
-    maxX: 2.32,
-    minY: 0.88,
-    maxY: 2.6,
-    minZ: -2.38,
-    maxZ: 2.5,
+    minX: -1.9,
+    maxX: 1.9,
+    minY: 0.72,
+    maxY: 2.52,
+    minZ: -2.16,
+    maxZ: 2.16,
   };
 
   function updateParticlesScale() {
@@ -467,16 +443,6 @@ function boot() {
     lampLevel += (lampTarget - lampLevel) * lampEase;
     if (Math.abs(lampTarget - lampLevel) < 0.001) lampLevel = lampTarget;
     room.setLampLevel(lampLevel);
-
-    const tvEase = 1 - Math.exp(-dt * 6);
-    tvLevel += (tvTarget - tvLevel) * tvEase;
-    if (Math.abs(tvTarget - tvLevel) < 0.001) tvLevel = tvTarget;
-
-    room.tvMaterial.uniforms.uTime.value = elapsed;
-    room.tvMaterial.uniforms.uOn.value = tvLevel;
-    const tvFlicker =
-      0.78 + 0.14 * Math.sin(elapsed * 13.7) + 0.08 * Math.sin(elapsed * 47.3 + 1.7);
-    room.tvLight.intensity = room.tvLight.userData.baseIntensity * tvLevel * tvFlicker;
 
     const dust = room.dust.material.uniforms;
     dust.uTime.value = elapsed;

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /* ------------------------------------------------------------------ */
-/*  Небольшие авторские шейдеры: небо, осадки, стекло, пыль, ТВ       */
+/*  Небольшие авторские шейдеры: небо, осадки, стекло и пыль          */
 /* ------------------------------------------------------------------ */
 
 const skyVertex = /* glsl */ `
@@ -213,9 +213,9 @@ export function createPrecipitation({ count = 2200, type = 'rain' } = {}) {
   const speeds = new Float32Array(count);
   const rnd = mulberry(9917 + (type === 'snow' ? 13 : 3));
   for (let i = 0; i < count; i++) {
-    positions[i * 3] = (rnd() - 0.5) * 24;
+    positions[i * 3] = 3.2 + rnd() * 16.5;
     positions[i * 3 + 1] = precipRange.yMin + rnd() * (precipRange.yMax - precipRange.yMin);
-    positions[i * 3 + 2] = -3.3 - rnd() * 15.5;
+    positions[i * 3 + 2] = -13 + rnd() * 26;
     seeds[i] = rnd();
     speeds[i] = 0.7 + rnd() * 0.65;
   }
@@ -401,9 +401,9 @@ export function createDust({ count = 240 } = {}) {
     return r / 2147483647;
   };
   for (let i = 0; i < count; i++) {
-    pos[i * 3] = (rand() - 0.5) * 5.4;
+    pos[i * 3] = (rand() - 0.5) * 3.9;
     pos[i * 3 + 1] = 0.2 + rand() * 2.45;
-    pos[i * 3 + 2] = -2.4 + rand() * 4.7;
+    pos[i * 3 + 2] = -2.15 + rand() * 4.3;
     seeds[i] = rand();
   }
   const geo = new THREE.BufferGeometry();
@@ -426,61 +426,4 @@ export function createDust({ count = 240 } = {}) {
   points.frustumCulled = false;
   points.renderOrder = 5;
   return points;
-}
-
-/* ---------------------------- телевизор ---------------------------- */
-
-const tvFragment = /* glsl */ `
-  precision highp float;
-  varying vec2 vUv;
-  uniform float uTime;
-  uniform float uOn;
-
-  float hash21(vec2 p) {
-    p = fract(p * vec2(123.34, 456.21));
-    p += dot(p, p + 45.32);
-    return fract(p.x * p.y);
-  }
-
-  void main() {
-    vec2 uv = vUv;
-    vec2 c = uv - 0.5;
-    float vignette = smoothstep(0.78, 0.25, length(c * vec2(1.0, 1.25)));
-
-    float grain = hash21(floor(gl_FragCoord.xy * 0.65) + floor(uTime * 22.0) * 17.0);
-    float scan = 0.68 + 0.32 * step(0.5, fract(gl_FragCoord.y * 0.5));
-    float roll = 0.82 + 0.18 * sin((uv.y - uTime * 0.19) * 34.0);
-    float band = smoothstep(0.08, 0.0, abs(fract(uv.y - uTime * 0.085) - 0.5));
-    float flicker = 0.92 + 0.08 * sin(uTime * 37.0);
-
-    vec3 image = vec3(0.36, 0.48, 0.62) * grain * scan * roll * flicker;
-    image += vec3(0.24, 0.31, 0.38) * band * 0.5;
-    image *= vignette;
-    image += vec3(0.03, 0.045, 0.055);
-
-    vec3 off = mix(vec3(0.012, 0.018, 0.022), vec3(0.07, 0.085, 0.095), smoothstep(0.7, 0.0, length(c)));
-    off *= 0.65 + 0.35 * sin((uv.y + uv.x * 0.3) * 3.0);
-    vec3 col = mix(off, image * 1.1 + 0.015, uOn);
-
-    // едва заметные горизонтальные строки
-    col *= 0.94 + 0.06 * sin(gl_FragCoord.y * 1.55);
-    gl_FragColor = vec4(col, 1.0);
-  }
-`;
-
-export function createTvMaterial() {
-  return new THREE.ShaderMaterial({
-    vertexShader: /* glsl */ `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: tvFragment,
-    uniforms: {
-      uTime: { value: 0 },
-      uOn: { value: 0 },
-    },
-  });
 }
